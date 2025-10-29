@@ -42,9 +42,11 @@ def users():
         return {'users': UserSchema(many=True).dump(all_users)}, 200
 
 @app.route('/users/<int:user_id>', methods=['GET','PATCH','PUT','DELETE'])
-def get_user(user_id):
+def user(user_id):
     user = Users.query.get(user_id)
-    if request.method == 'PUT':
+    if user is None:
+        return {'Mensaje': 'Usuario no encontrado'}, 404
+    elif request.method == 'PUT':
         try:
             user_data = UserSchema().load(request.json)
             user.username = user_data['username']
@@ -54,9 +56,9 @@ def get_user(user_id):
             db.session.commit()
         except ValidationError as err:
             return{'Mensaje': f'Error en la validación: {err.messages}'},400
-                   
+            
 
-    if request.method == 'PATCH':
+    elif request.method == 'PATCH':
         try:
             user_data = UserSchema().load(request.json, partial=True)
             for key, value in user_data.items():
@@ -65,9 +67,15 @@ def get_user(user_id):
             return UserSchema().dump(user), 200
         except ValidationError as err:
             return {'Mensaje': f'Error en la validación: {err.messages}'}, 400
-    if user is None:
-        return {'Mensaje': 'Usuario no encontrado'}, 404
-    return UserSchema().dump(user), 200
+
+
+    elif request.method == 'DELETE':
+        db.session.delete(user)
+        db.session.commit()
+        return {'Mensaje': 'Usuario eliminado correctamente'}, 200
+    
+    elif request.method == 'GET':
+        return UserSchema().dump(user), 200
 
 @app.route('/blogs', methods=['POST','GET'])
 def blogs():
@@ -91,5 +99,50 @@ def blogs():
         all_blogs = Blogs.query.all()
         return {'blogs': BlogSchema(many=True).dump(all_blogs)}, 200
 
+@app.route('/blogs/<int:blog_id>', methods=['GET','PUT','PATCH','DELETE'])
+def blog(blog_id):
+    blog = Blogs.query.get(blog_id)
+    if not blog:
+        return {'Mensaje': 'Blog no encontrado'}, 404
+
+    if request.method == 'PUT':
+        try:
+            blog_data = BlogSchema().load(request.json)
+            blog.title = blog_data['title']
+            blog.description = blog_data['description']
+            blog.user_id = blog_data['user_id']
+            if 'category_id' in blog_data:
+                blog.category_id = blog_data['category_id']
+            db.session.commit()
+            return BlogSchema().dump(blog), 200
+        except ValidationError as err:
+            return {'Mensaje': f'Error en la validación: {err.messages}'}, 400
+
+    elif request.method == 'PATCH':
+        try:
+            blog_data = BlogSchema().load(request.json, partial=True)
+            for key, value in blog_data.items():
+                if hasattr(blog, key):  # Solo actualizar atributos existentes
+                    setattr(blog, key, value)
+            db.session.commit()
+            return BlogSchema().dump(blog), 200
+        except ValidationError as err:
+            return {'Mensaje': f'Error en la validación: {err.messages}'}, 400
+
+    elif request.method == 'DELETE':
+        db.session.delete(blog)
+        db.session.commit()
+        return {'Mensaje': 'Blog eliminado correctamente'}, 200
+        
+    elif request.method == 'GET':
+        return BlogSchema().dump(blog), 200
+        db.session.delete(blog)
+        db.session.commit()
+        return {'Mensaje': 'Blog eliminado correctamente'}, 200
+
+    elif request.method == 'GET':
+        blog = Blogs.query.get(blog_data['id'])
+        return BlogSchema().dump(blog), 200
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)
+    app.run(debug=True, port=5000)
