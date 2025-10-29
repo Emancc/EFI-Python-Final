@@ -41,7 +41,35 @@ def users():
         all_users = Users.query.all()
         return {'users': UserSchema(many=True).dump(all_users)}, 200
 
-@app.route('/blogs', methods=['POST', 'GET'])
+@app.route('/users/<int:user_id>', methods=['GET','PATCH','PUT','DELETE'])
+def get_user(user_id):
+    user = Users.query.get(user_id)
+    if request.method == 'PUT':
+        try:
+            user_data = UserSchema().load(request.json)
+            user.username = user_data['username']
+            user.email = user_data['email']
+            if 'password' in user_data:
+                user.set_password(user_data['password'])
+            db.session.commit()
+        except ValidationError as err:
+            return{'Mensaje': f'Error en la validación: {err.messages}'},400
+                   
+
+    if request.method == 'PATCH':
+        try:
+            user_data = UserSchema().load(request.json, partial=True)
+            for key, value in user_data.items():
+                setattr(user, key, value)
+            db.session.commit()
+            return UserSchema().dump(user), 200
+        except ValidationError as err:
+            return {'Mensaje': f'Error en la validación: {err.messages}'}, 400
+    if user is None:
+        return {'Mensaje': 'Usuario no encontrado'}, 404
+    return UserSchema().dump(user), 200
+
+@app.route('/blogs', methods=['POST','GET'])
 def blogs():
     if request.method == 'POST':
         try:
