@@ -5,6 +5,9 @@ class UserSchema(Schema):
     password = fields.Str(load_only=True, required=True)
     email = fields.Email(required=True)
     username = fields.Str(required=True)
+    role = fields.Str(dump_only=True)  # El rol solo se puede asignar por administradores
+    is_active = fields.Bool(dump_only=True)
+    created_at = fields.DateTime(dump_only=True)
     blogs = fields.Nested('BlogSchema', many=True, dump_only=True)
     comments = fields.Nested('CommentSchema', many=True, dump_only=True)
 

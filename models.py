@@ -9,9 +9,13 @@ class Users(db.Model, UserMixin):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password_hash = db.Column(db.String(256), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='user')  # user, moderator, admin
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    # Relación con blogs
+    # Relaciones
     blogs = db.relationship('Blogs', backref='author', lazy=True)
+    comments = db.relationship('Comment', backref='author', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
